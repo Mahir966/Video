@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Inside MCQ Hub — discover the technology, logic, and intelligent workflow powering the MCQ Hub Android learning app.">
+<meta name="theme-color" content="#0a0e1a">
+<title>Inside MCQ Hub — App Mechanism &amp; Architecture</title>
+<style>
+/* ============ Design tokens ============ */
+:root{
+  --bg:#0a0e1a;
+  --bg-soft:#0d1326;
+  --surface:#121a30;
+  --surface-2:#182342;
+  --border:rgba(151,168,220,.14);
+  --border-strong:rgba(151,168,220,.28);
+  --text:#e8ecf8;
+  --muted:#9aa7c9;
+  --faint:#6b7899;
+  --accent:#7c8cff;
+  --accent-2:#9f6bff;
+  --accent-soft:rgba(124,140,255,.13);
+  --teal:#2dd4a8;
+  --amber:#f5b54a;
+  --rose:#fb7185;
+  --radius:18px;
+  --radius-lg:24px;
+  --nav-h:64px;
+  --shadow:0 24px 60px -24px rgba(0,0,0,.65);
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:84px}
+body{background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.6;font-size:16px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:rgba(124,140,255,.35);color:#fff}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--surface-2);border-radius:99px;border:2px solid var(--bg)}
+img,svg{display:block}
+a{color:inherit}
+button{font-family:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
+.container{width:min(1140px,100% - 48px);margin-inline:auto}
+.hidden{display:none!important}
+.ic{width:18px;height:18px;flex-shrink:0}
+.skip-link{position:fixed;top:-60px;left:16px;z-index:300;background:var(--accent);color:#0b1020;padding:10px 18px;border-radius:10px;font-weight:700;transition:top .2s}
+.skip-link:focus{top:12px}
+
+/* ============ Buttons ============ */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;font:inherit;font-weight:650;font-size:14.5px;padding:12px 22px;border-radius:999px;border:1px solid transparent;cursor:pointer;transition:transform .25s,box-shadow .25s,background .25s,border-color .25s,color .25s;text-decoration:none;white-space:nowrap}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(135deg,#7c8cff,#9f6bff);color:#0b1020;box-shadow:0 12px 32px -12px rgba(124,140,255,.6)}
+.btn.primary:hover{transform:translateY(-2px);box-shadow:0 18px 40px -12px rgba(124,140,255,.7)}
+.btn.ghost{background:rgba(124,140,255,.07);border-color:var(--border-strong);color:var(--text)}
+.btn.ghost:hover{background:rgba(124,140,255,.14);border-color:rgba(151,168,220,.45);transform:translateY(-2px)}
+.btn.small{padding:8px 15px;font-size:13px}
+.btn:disabled{opacity:.4;cursor:default;transform:none!important}
+
+/* ============ Reading progress ============ */
+.read-progress{position:fixed;top:0;left:0;height:3px;width:0;z-index:200;border-radius:0 3px 3px 0;background:linear-gradient(90deg,var(--accent),var(--accent-2) 55%,var(--teal))}
+
+/* ============ Navigation ============ */
+.nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);background:rgba(10,14,26,.7);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid transparent;transition:background .3s,border-color .3s}
+.nav.scrolled{background:rgba(10,14,26,.88);border-bottom-color:var(--border)}
+.nav-inner{height:100%;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:750;font-size:17px;color:var(--text);text-decoration:none;letter-spacing:-.01em}
+.brand-logo{width:34px;height:34px;filter:drop-shadow(0 4px 12px rgba(124,140,255,.45))}
+.brand-tag{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border:1px solid var(--border-strong);padding:3px 9px;border-radius:999px}
+.nav-links{display:flex;gap:4px;list-style:none}
+.nav-links a{display:block;padding:8px 13px;border-radius:999px;font-size:14px;font-weight:550;color:var(--muted);text-decoration:none;transition:color .2s,background .2s}
+.nav-links a:hover{color:var(--text);background:rgba(124,140,255,.09)}
+.nav-links a.active{color:var(--text);background:rgba(124,140,255,.15)}
+.nav-burger{display:none;width:42px;height:42px;padding:0;border-radius:12px}
+@media(max-width:880px){
+  .nav-links{position:absolute;top:var(--nav-h);left:0;right:0;flex-direction:column;gap:2px;background:rgba(10,14,26,.97);backdrop-filter:blur(18px);padding:12px 24px 20px;border-bottom:1px solid var(--border);display:none}
+  .nav-links.open{display:flex}
+  .nav-links a{padding:12px 14px;font-size:15px}
+  .nav-burger{display:inline-flex}
+  .brand-tag{display:none}
+}
+
+/* ============ Hero ============ */
+.hero{position:relative;min-height:100vh;min-height:100svh;display:flex;align-items:center;padding:calc(var(--nav-h) + 72px) 0 90px;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(rgba(124,140,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(124,140,255,.05) 1px,transparent 1px);background-size:46px 46px;-webkit-mask-image:radial-gradient(ellipse 85% 75% at 50% 40%,#000 25%,transparent 78%);mask-image:radial-gradient(ellipse 85% 75% at 50% 40%,#000 25%,transparent 78%)}
+.hero::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(640px 420px at 12% 18%,rgba(124,140,255,.15),transparent 70%),radial-gradient(560px 420px at 88% 78%,rgba(45,212,168,.09),transparent 70%)}
+.hero .container{position:relative;z-index:1}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center}
+.hero-badge{display:inline-flex;align-items:center;gap:9px;font-size:12.5px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);background:var(--accent-soft);border:1px solid rgba(124,140,255,.35);padding:7px 16px;border-radius:999px;margin-bottom:26px}
+.hero-badge i{width:7px;height:7px;border-radius:50%;background:var(--teal);box-shadow:0 0 10px var(--teal);animation:blink 2.4s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+.hero h1{font-size:clamp(42px,6.4vw,70px);line-height:1.04;letter-spacing:-.025em;font-weight:800}
+.grad-text{background:linear-gradient(115deg,#aab6ff 0%,#7c8cff 45%,#2dd4a8 110%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero-sub{font-size:clamp(16px,2vw,19px);color:var(--muted);max-width:50ch;margin-top:20px}
+.hero-cta{display:flex;gap:14px;margin-top:32px;flex-wrap:wrap}
+.hero-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:48px}
+.info-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 18px;transition:transform .3s,border-color .3s,box-shadow .3s}
+.info-card:hover{transform:translateY(-5px);border-color:var(--border-strong);box-shadow:var(--shadow)}
+.info-card .ic-box{width:40px;height:40px;border-radius:12px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;margin-bottom:14px}
+.info-card .ic-box .ic{width:20px;height:20px}
+.info-card h3{font-size:15px;font-weight:700;letter-spacing:-.01em}
+.info-card p{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.55}
+.anim{opacity:0;animation:rise .9s cubic-bezier(.22,1,.36,1) forwards;animation-delay:var(--d,0s)}
+@keyframes rise{from{opacity:0;transform:translateY(26px)}to{opacity:1;transform:translateY(0)}}
+
+/* --- Phone illustration --- */
+.hero-visual{position:relative;display:flex;justify-content:center;align-items:center;min-height:640px}
+.hero-glow{position:absolute;inset:-8%;background:radial-gradient(circle at 52% 46%,rgba(124,140,255,.22),transparent 58%);filter:blur(8px);pointer-events:none}
+.p{position:absolute;width:6px;height:6px;border-radius:50%;background:rgba(124,140,255,.55);box-shadow:0 0 14px rgba(124,140,255,.8);animation:drift 13s linear infinite;pointer-events:none}
+.p.teal{background:rgba(45,212,168,.6);box-shadow:0 0 14px rgba(45,212,168,.8)}
+.p.amber{background:rgba(245,181,74,.55);box-shadow:0 0 14px rgba(245,181,74,.8)}
+@keyframes drift{0%{transform:translateY(40px) scale(.5);opacity:0}15%{opacity:.85}80%{opacity:.5}100%{transform:translateY(-220px) scale(1.1);opacity:0}}
+.phone-wrap{position:relative;z-index:1;animation:floaty 7s ease-in-out infinite}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+.phone{width:min(292px,76vw);aspect-ratio:9/18.6;border-radius:46px;background:linear-gradient(165deg,#243058,#0b1126 62%);border:1px solid rgba(160,175,230,.28);padding:12px;position:relative;box-shadow:0 50px 100px -34px rgba(0,0,0,.75),0 0 90px -24px rgba(124,140,255,.4)}
+.phone::before{content:'';position:absolute;top:21px;left:50%;transform:translateX(-50%);width:84px;height:21px;border-radius:12px;background:#04060e;z-index:2}
+.phone-screen{height:100%;border-radius:36px;background:linear-gradient(180deg,#101832,#0a0f22);padding:46px 15px 15px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.ps-status{display:flex;justify-content:space-between;align-items:center;font-size:10.5px;font-weight:600;color:var(--muted);padding:0 8px}
+.ps-dots i{display:inline-block;width:4px;height:4px;border-radius:50%;background:var(--faint);margin-left:3px}
+.ps-appbar{display:flex;align-items:center;gap:8px;font-size:13px;padding:0 2px}
+.ps-logo{width:24px;height:24px;flex-shrink:0}
+.ps-appbar strong{font-weight:700}
+.ps-theme{margin-left:auto;color:var(--muted);display:flex}
+.ps-theme .ic{width:14px;height:14px}
+.ps-subject{display:flex;gap:6px;flex-wrap:wrap}
+.ps-chip{font-size:10.5px;font-weight:650;padding:4px 11px;border-radius:999px;background:var(--accent-soft);color:var(--accent)}
+.ps-chip.ghost{background:transparent;border:1px solid var(--border-strong);color:var(--muted)}
+.ps-progress{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:10px 12px}
+.ps-progress-top{display:flex;justify-content:space-between;font-size:10.5px;font-weight:600;color:var(--muted);margin-bottom:7px}
+.ps-progress-top b{color:var(--teal)}
+.ps-bar{height:6px;border-radius:99px;background:rgba(151,168,220,.16);overflow:hidden}
+.ps-bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#7c8cff,#2dd4a8)}
+.ps-q{font-size:12.5px;line-height:1.5;font-weight:600;background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:12px}
+.ps-opts{display:grid;gap:8px}
+.ps-opt{display:flex;align-items:center;gap:9px;background:var(--bg);border:1px solid var(--border);border-radius:11px;padding:9px 11px;font-size:11.5px;font-weight:550;color:var(--muted)}
+.ps-opt b{width:20px;height:20px;border-radius:7px;background:var(--surface-2);display:grid;place-items:center;font-size:10px;color:var(--muted);flex-shrink:0}
+.ps-opt.correct{border-color:rgba(45,212,168,.55);background:rgba(45,212,168,.09);color:var(--text)}
+.ps-opt.correct b{background:var(--teal);color:#04241a}
+.ps-check{margin-left:auto;color:var(--teal);display:flex}
+.ps-check .ic{width:13px;height:13px}
+.ps-foot{margin-top:auto;display:flex;justify-content:space-between;align-items:center;padding-top:4px}
+.ps-score{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:750;color:var(--amber);background:rgba(245,181,74,.1);border:1px solid rgba(245,181,74,.32);padding:5px 11px;border-radius:999px}
+.ps-score .ic{width:11px;height:11px}
+.ps-next{font-size:11px;font-weight:750;color:#0b1020;background:linear-gradient(135deg,#7c8cff,#9f6bff);padding:7px 14px;border-radius:999px}
+.float-card{position:absolute;display:flex;align-items:center;gap:11px;background:rgba(17,24,45,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--border-strong);border-radius:15px;padding:11px 15px;box-shadow:0 20px 44px -18px rgba(0,0,0,.75);animation:floaty 6.5s ease-in-out infinite;z-index:3}
+.float-card strong{display:block;font-size:13px;letter-spacing:-.01em}
+.float-card span{font-size:11px;color:var(--muted)}
+.fc-ic{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);flex-shrink:0}
+.fc-ic.teal{background:rgba(45,212,168,.13);color:var(--teal)}
+.fc-ic .ic{width:16px;height:16px}
+.fc-1{top:4%;left:-15%}
+.fc-2{top:21%;right:-14%;animation-delay:-2.2s}
+.fc-3{bottom:25%;left:-18%;animation-delay:-4.1s}
+.fc-4{bottom:3%;right:-9%;animation-delay:-1.3s}
+@media(max-width:1160px){.fc-1{left:-7%}.fc-2{right:-6%}.fc-3{left:-9%}.fc-4{right:-3%}}
+@media(max-width:980px){
+  .hero{padding-top:calc(var(--nav-h) + 48px)}
+  .hero-grid{grid-template-columns:1fr;gap:56px}
+  .hero-visual{min-height:0;padding:30px 0 10px}
+}
+@media(max-width:640px){
+  .hero-cards{grid-template-columns:1fr}
+  .fc-3,.fc-4{display:none}
+  .fc-1{left:-3%;top:1%}
+  .fc-2{right:-3%}
+  .hero-cta .btn{flex:1}
+}
+
+/* ============ Sections ============ */
+section{padding:104px 0}
+.sec-head{max-width:660px;margin-bottom:52px}
+.sec-head.center{margin-inline:auto;text-align:center}
+.sec-head.center .eyebrow{justify-content:center}
+.eyebrow{display:inline-flex;align-items:center;gap:10px;font-size:12px;font-weight:750;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:16px}
+.eyebrow::before{content:'';width:24px;height:2px;background:var(--accent);border-radius:2px}
+.sec-head.center .eyebrow::after{content:'';width:24px;height:2px;background:var(--accent);border-radius:2px}
+h2{font-size:clamp(29px,4vw,41px);line-height:1.14;letter-spacing:-.02em;font-weight:750}
+.sec-lede{color:var(--muted);margin-top:16px;font-size:16.5px}
+/* scroll reveal */
+[data-reveal]{opacity:0}
+[data-reveal].in-view{animation:rise .8s cubic-bezier(.22,1,.36,1) var(--d,0s) both}
+
+/* ============ Workflow ============ */
+.flow-track{list-style:none;display:grid;grid-template-columns:repeat(8,1fr);gap:12px;position:relative;margin-bottom:40px;padding:0}
+.flow-track::before{content:'';position:absolute;top:26px;left:56px;right:56px;height:2px;background:linear-gradient(90deg,transparent,var(--border-strong) 8%,var(--accent) 50%,var(--border-strong) 92%,transparent);opacity:.55}
+.flow-step{position:relative;display:block;width:100%;background:none;border:none;color:inherit;cursor:pointer;text-align:center;padding:0 2px;border-radius:14px}
+.flow-node{width:52px;height:52px;margin:0 auto;border-radius:50%;background:var(--surface);border:1px solid var(--border-strong);display:grid;place-items:center;color:var(--muted);position:relative;z-index:1;transition:transform .3s,color .3s,border-color .3s,background .3s,box-shadow .3s}
+.flow-node .ic{width:21px;height:21px}
+.flow-step:hover .flow-node{color:var(--text);border-color:var(--accent);transform:translateY(-4px)}
+.flow-step.active .flow-node{background:linear-gradient(135deg,#7c8cff,#9f6bff);border-color:transparent;color:#0b1020;box-shadow:0 0 0 6px rgba(124,140,255,.16),0 14px 32px -10px rgba(124,140,255,.55)}
+.flow-text{display:block;margin-top:13px}
+.flow-num{display:block;font-size:10.5px;font-weight:750;letter-spacing:.14em;color:var(--faint)}
+.flow-title{display:block;font-size:13.5px;font-weight:650;line-height:1.35;margin-top:4px;color:var(--muted);transition:color .3s}
+.flow-short{display:none;font-size:12px;color:var(--faint);margin-top:6px;line-height:1.5}
+.flow-step.active .flow-title{color:var(--text)}
+.flow-step.active .flow-num{color:var(--accent)}
+@media(max-width:900px){
+  .flow-track{display:flex;flex-direction:column;gap:0}
+  .flow-track::before{left:25px;right:auto;top:24px;bottom:24px;width:2px;height:auto;background:linear-gradient(180deg,transparent,var(--border-strong) 6%,var(--accent) 50%,var(--border-strong) 94%,transparent)}
+  .flow-step{display:grid;grid-template-columns:52px 1fr;gap:18px;text-align:left;padding:15px 0}
+  .flow-node{margin:0}
+  .flow-text{margin-top:0;display:flex;flex-direction:column;justify-content:center}
+  .flow-title{font-size:15.5px}
+  .flow-short{display:block}
+}
+/* detail panel (shared) */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:clamp(22px,3.4vw,34px);display:grid;grid-template-columns:1fr auto;gap:26px;align-items:start}
+.panel.swap{animation:swapIn .45s cubic-bezier(.22,1,.36,1)}
+@keyframes swapIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.fd-chip{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:750;letter-spacing:.09em;text-transform:uppercase;color:var(--teal);background:rgba(45,212,168,.1);border:1px solid rgba(45,212,168,.32);padding:5px 13px;border-radius:999px;margin-bottom:14px}
+.fd-chip .ic{width:12px;height:12px}
+.panel h3{font-size:clamp(19px,2.4vw,23px);letter-spacing:-.015em;font-weight:750}
+.panel .fd-desc{color:var(--muted);font-size:15px;margin-top:10px;max-width:62ch}
+.fd-tech{display:flex;align-items:flex-start;gap:9px;font-size:13px;font-weight:600;color:var(--teal);margin-top:14px}
+.fd-tech .ic{width:14px;height:14px;margin-top:3px}
+.tech-files{display:flex;flex-wrap:wrap;gap:7px;margin-top:16px}
+.file-chip{font-family:var(--mono);font-size:11.5px;color:var(--muted);background:var(--bg);border:1px solid var(--border);padding:5px 10px;border-radius:8px}
+.fd-nav{display:flex;flex-direction:column;gap:10px}
+@media(max-width:720px){
+  .panel{grid-template-columns:1fr}
+  .fd-nav{flex-direction:row}
+}
+
+/* ============ Technologies ============ */
+.tech-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.tech-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:26px;display:flex;flex-direction:column;gap:15px;transition:transform .3s,border-color .3s,box-shadow .3s}
+.tech-card:hover{transform:translateY(-5px);border-color:var(--border-strong);box-shadow:var(--shadow)}
+.tech-top{display:flex;align-items:center;gap:14px}
+.tech-ic{width:48px;height:48px;border-radius:14px;display:grid;place-items:center;flex-shrink:0}
+.tech-ic .ic{width:26px;height:26px}
+.tint-indigo{background:rgba(124,140,255,.13);color:#8b9aff}
+.tint-teal{background:rgba(45,212,168,.12);color:var(--teal)}
+.tint-amber{background:rgba(245,181,74,.12);color:var(--amber)}
+.tint-rose{background:rgba(251,113,133,.12);color:var(--rose)}
+.tint-violet{background:rgba(159,107,255,.15);color:#b28cff}
+.tint-slate{background:rgba(151,168,220,.13);color:#9aa7c9}
+.tech-id{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+.tech-id h3{font-size:17.5px;font-weight:750;letter-spacing:-.01em}
+.tech-ext{font-family:var(--mono);font-size:11px;color:var(--faint);background:var(--bg);border:1px solid var(--border);padding:2.5px 8px;border-radius:7px}
+.badge{margin-left:auto;font-size:10.5px;font-weight:750;letter-spacing:.05em;text-transform:uppercase;padding:5px 11px;border-radius:999px;white-space:nowrap}
+.badge.runtime{background:rgba(45,212,168,.11);color:var(--teal);border:1px solid rgba(45,212,168,.32)}
+.badge.build{background:rgba(245,181,74,.11);color:var(--amber);border:1px solid rgba(245,181,74,.32)}
+.badge.dev{background:rgba(124,140,255,.11);color:var(--accent);border:1px solid rgba(124,140,255,.32)}
+.tech-role{font-size:14px;color:var(--muted)}
+.tech-detail{display:grid;grid-template-rows:0fr;transition:grid-template-rows .45s cubic-bezier(.22,1,.36,1)}
+.tech-detail>div{overflow:hidden}
+.tech-detail p{font-size:13.5px;color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.tech-card.open .tech-detail{grid-template-rows:1fr}
+.tech-more{margin-top:auto;display:inline-flex;align-items:center;gap:7px;align-self:flex-start;background:none;border:none;color:var(--accent);font:inherit;font-size:13px;font-weight:700;cursor:pointer;padding:4px 2px}
+.tech-more .ic{width:15px;height:15px;transition:transform .35s}
+.tech-card.open .tech-more .ic{transform:rotate(180deg)}
+.tech-more:hover{color:#aab6ff}
+@media(max-width:980px){.tech-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:620px){.tech-grid{grid-template-columns:1fr}}
+
+/* ============ Architecture ============ */
+.arch-scroll{overflow-x:auto;border-radius:var(--radius-lg)}
+.arch-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:clamp(14px,2.6vw,30px)}
+.arch-svg{width:100%;min-width:780px;height:auto;font-family:var(--font)}
+.rt-box{fill:rgba(124,140,255,.035);stroke:rgba(151,168,220,.3);stroke-width:1.5}
+.dev-box{fill:rgba(245,181,74,.03);stroke:rgba(245,181,74,.42);stroke-width:1.5;stroke-dasharray:8 7}
+.svg-cap{fill:var(--muted);font-size:11px;font-weight:750;letter-spacing:.16em}
+.svg-cap.amber{fill:var(--amber)}
+.svg-note{fill:var(--faint);font-size:11.5px}
+.lb{fill:#0e1530;stroke:rgba(151,168,220,.24);stroke-width:1.5;transition:stroke .3s,fill .3s}
+.dev-lb{fill:#141a30}
+.layer{cursor:pointer;outline:none}
+.layer:hover .lb{stroke:var(--accent)}
+.layer:hover .dev-lb{stroke:var(--amber)}
+.layer.selected .lb{stroke:var(--accent);fill:rgba(124,140,255,.09)}
+.layer.selected .dev-lb{stroke:var(--amber);fill:rgba(245,181,74,.08)}
+.layer:focus-visible .lb{stroke:var(--teal);stroke-width:2.5}
+.layer-title{fill:var(--muted);font-size:11px;font-weight:750;letter-spacing:.15em}
+.layer-title.amber{fill:var(--amber)}
+.layer-sub{fill:var(--faint);font-size:11px;font-style:italic}
+.chip-r{fill:#0b1122;stroke:rgba(151,168,220,.2)}
+.chip-t{fill:#dfe5f7;font-size:12.5px;font-weight:600}
+.file-t{fill:#c3cdea;font-size:11.5px;font-family:var(--mono)}
+.arr{stroke:var(--accent);stroke-width:2;fill:none;stroke-dasharray:5 7;stroke-linecap:round;animation:dashmove 1.3s linear infinite}
+.arr-dev{stroke:var(--amber)}
+@keyframes dashmove{to{stroke-dashoffset:-12}}
+.arr-h{fill:var(--accent)}
+.arr-h.amber{fill:var(--amber)}
+.arr-label{fill:var(--faint);font-size:11px}
+.arr-label.amber{fill:rgba(245,181,74,.75)}
+.apk-box{fill:rgba(124,140,255,.1);stroke:rgba(124,140,255,.5);stroke-width:1.5}
+.apk-t{fill:#aab6ff;font-size:14.5px;font-weight:750}
+.arch-legend{display:flex;gap:22px;flex-wrap:wrap;justify-content:center;margin-top:20px}
+.legend-item{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--muted)}
+.legend-line{width:26px;height:0;border-top:3px solid var(--accent);border-radius:2px}
+.legend-line.dashed{border-top:3px dashed var(--amber)}
+.arch-detail{margin-top:22px}
+.arch-detail .fd-chip.dev{color:var(--amber);background:rgba(245,181,74,.09);border-color:rgba(245,181,74,.32)}
+.scroll-hint{display:none;margin-top:12px;text-align:center;font-size:12.5px;color:var(--faint)}
+@media(max-width:820px){.scroll-hint{display:block}}
+
+/* ============ Data Explorer ============ */
+.explorer{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.explorer-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.q-nav{display:flex;align-items:center;gap:10px}
+.q-btn{width:38px;height:38px;border-radius:11px;background:var(--bg);border:1px solid var(--border-strong);color:var(--text);display:grid;place-items:center;cursor:pointer;transition:background .25s,border-color .25s,transform .2s}
+.q-btn:hover{background:var(--accent-soft);border-color:var(--accent)}
+.q-btn:active{transform:scale(.94)}
+.q-count{font-size:13px;color:var(--muted);font-weight:600;min-width:112px;text-align:center}
+.seg{display:inline-flex;background:var(--bg);border:1px solid var(--border-strong);border-radius:999px;padding:4px;gap:4px}
+.seg-btn{border:none;background:none;color:var(--muted);font:inherit;font-size:13.5px;font-weight:650;padding:8px 19px;border-radius:999px;cursor:pointer;transition:background .25s,color .25s}
+.seg-btn.active{background:linear-gradient(135deg,#7c8cff,#9f6bff);color:#0b1020}
+.explorer-body{min-height:430px}
+.explorer-body.swap{animation:swapIn .45s cubic-bezier(.22,1,.36,1)}
+.student-view{padding:clamp(22px,4vw,42px);max-width:740px;margin:0 auto}
+.meta-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.meta-chip{font-size:12px;font-weight:650;padding:5.5px 13px;border-radius:999px;border:1px solid var(--border-strong);color:var(--muted)}
+.meta-chip.subject{color:var(--accent);border-color:rgba(124,140,255,.42);background:var(--accent-soft)}
+.meta-chip.diff.easy{color:var(--teal);border-color:rgba(45,212,168,.4);background:rgba(45,212,168,.08)}
+.meta-chip.diff.medium{color:var(--amber);border-color:rgba(245,181,74,.4);background:rgba(245,181,74,.08)}
+.meta-chip.diff.hard{color:var(--rose);border-color:rgba(251,113,133,.4);background:rgba(251,113,133,.08)}
+.q-text{font-size:clamp(17px,2.4vw,21px);font-weight:650;line-height:1.5;letter-spacing:-.01em;margin-bottom:26px}
+.options{display:grid;gap:12px}
+.opt{display:flex;align-items:center;gap:14px;text-align:left;background:var(--bg);border:1px solid var(--border-strong);border-radius:14px;padding:14px 17px;color:var(--text);font:inherit;font-size:15px;cursor:pointer;transition:border-color .22s,background .22s,transform .22s}
+.opt:hover:not(:disabled){border-color:var(--accent);transform:translateX(5px)}
+.opt:disabled{cursor:default}
+.opt .key{width:30px;height:30px;border-radius:9px;background:var(--surface-2);display:grid;place-items:center;font-size:12.5px;font-weight:750;color:var(--muted);flex-shrink:0;transition:background .22s,color .22s}
+.opt.correct{border-color:rgba(45,212,168,.6);background:rgba(45,212,168,.08)}
+.opt.correct .key{background:var(--teal);color:#04241a}
+.opt.wrong{border-color:rgba(251,113,133,.6);background:rgba(251,113,133,.08)}
+.opt.wrong .key{background:var(--rose);color:#2a0a10}
+.feedback{margin-top:22px;border-radius:14px;padding:17px 19px;border:1px solid;display:none}
+.feedback.show{display:block;animation:swapIn .4s cubic-bezier(.22,1,.36,1)}
+.feedback.good{border-color:rgba(45,212,168,.45);background:rgba(45,212,168,.07)}
+.feedback.bad{border-color:rgba(251,113,133,.45);background:rgba(251,113,133,.07)}
+.feedback h4{font-size:15px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.feedback h4 .ic{width:16px;height:16px}
+.feedback.good h4{color:var(--teal)}
+.feedback.bad h4{color:var(--rose)}
+.feedback p{font-size:14px;color:var(--muted)}
+.sv-next{margin-top:20px}
+.data-view{margin:0;padding:clamp(20px,4vw,36px);background:#0b1122;overflow:auto;max-height:540px;border-top:1px solid var(--border)}
+.data-view code{font-family:var(--mono);font-size:13.5px;line-height:1.75;color:#c9d2ee}
+.j-key{color:#8fa3ff}
+.j-str{color:#5eead4}
+.j-num{color:#f5b54a}
+.j-bool{color:#fb9db1}
+
+/* ============ Data flow ============ */
+.flowviz{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:clamp(16px,3vw,32px)}
+.flowviz-scroll{overflow-x:auto;border-radius:14px}
+.flow-svg{width:100%;min-width:760px;height:auto;font-family:var(--font)}
+.flow-path{fill:none;stroke:rgba(151,168,220,.32);stroke-width:2.5;stroke-dasharray:1 11;stroke-linecap:round}
+#flowDot{fill:#fff;stroke:var(--accent);stroke-width:3.5;filter:drop-shadow(0 0 10px rgba(124,140,255,.9))}
+.fnode .nc{fill:#141d38;stroke:rgba(151,168,220,.38);stroke-width:1.5;transition:fill .35s,stroke .35s,stroke-width .35s}
+.fnode .fnum{fill:var(--muted);font-size:15px;font-weight:750;transition:fill .35s}
+.fnode .flabel{fill:var(--muted);font-size:13.5px;font-weight:600;transition:fill .35s}
+.fnode .halo{fill:none;stroke:var(--accent);stroke-width:1.5;opacity:0;transition:opacity .35s;transform-box:fill-box;transform-origin:center}
+.fnode.active .nc{fill:var(--accent);stroke:#aab6ff;stroke-width:2.5}
+.fnode.active .fnum{fill:#0b1020}
+.fnode.active .flabel{fill:var(--text)}
+.fnode.active .halo{opacity:.55;animation:halo 1.7s ease-in-out infinite}
+@keyframes halo{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
+.flowviz-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:22px;justify-content:center}
+.flowviz-note{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-left:6px}
+.flowviz-note .ic{width:15px;height:15px;color:var(--teal)}
+.stage-info{margin-top:20px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;display:grid;grid-template-columns:auto 1fr auto;gap:20px;align-items:center}
+.stage-num{width:48px;height:48px;border-radius:14px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:800;font-size:16px}
+.stage-text h3{font-size:17px;font-weight:750;letter-spacing:-.01em}
+.stage-text p{font-size:14px;color:var(--muted);margin-top:4px}
+.stage-badge{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--teal);background:rgba(45,212,168,.09);border:1px solid rgba(45,212,168,.32);padding:6px 13px;border-radius:999px;white-space:nowrap}
+.stage-badge .ic{width:13px;height:13px}
+@media(max-width:720px){.stage-info{grid-template-columns:1fr}.stage-badge{justify-self:start}}
+
+/* ============ Features ============ */
+.feat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.feat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;display:flex;flex-direction:column;gap:13px;transition:transform .3s,border-color .3s,box-shadow .3s}
+.feat-card:hover{transform:translateY(-5px);border-color:var(--border-strong);box-shadow:var(--shadow)}
+.feat-ic{width:44px;height:44px;border-radius:13px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center}
+.feat-ic .ic{width:21px;height:21px}
+.feat-card h3{font-size:16px;font-weight:750;letter-spacing:-.01em}
+.feat-card>p{font-size:13.5px;color:var(--muted)}
+@media(max-width:1020px){.feat-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.feat-grid{grid-template-columns:1fr}}
+
+/* ============ Footer ============ */
+footer{border-top:1px solid var(--border);padding:72px 0 44px;margin-top:30px;background:linear-gradient(180deg,transparent,rgba(124,140,255,.045))}
+.foot-inner{display:flex;flex-direction:column;align-items:center;text-align:center;gap:16px;max-width:560px;margin:0 auto}
+.foot-brand{display:flex;align-items:center;gap:12px;font-size:21px;font-weight:800;letter-spacing:-.01em}
+.foot-brand .brand-logo{width:42px;height:42px}
+.foot-tag{font-size:13px;font-weight:750;letter-spacing:.22em;text-transform:uppercase;color:var(--accent)}
+.foot-desc{font-size:14.5px;color:var(--muted)}
+.foot-bottom{margin-top:44px;padding-top:26px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:12.5px;color:var(--faint)}
+
+/* ============ Floating controls ============ */
+.to-top{position:fixed;right:22px;bottom:22px;width:47px;height:47px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text);display:grid;place-items:center;cursor:pointer;opacity:0;pointer-events:none;transform:translateY(14px);transition:opacity .35s,transform .35s,background .25s,color .25s;z-index:90;box-shadow:var(--shadow)}
+.to-top.show{opacity:1;pointer-events:auto;transform:none}
+.to-top:hover{background:var(--accent);color:#0b1020;border-color:var(--accent)}
+.toast{position:fixed;left:50%;bottom:30px;transform:translate(-50%,16px);background:#1a2342;border:1px solid var(--border-strong);color:var(--text);padding:11px 20px;border-radius:999px;font-size:14px;font-weight:600;display:flex;gap:9px;align-items:center;opacity:0;pointer-events:none;transition:opacity .35s,transform .35s;z-index:150;box-shadow:var(--shadow)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast .ic{width:16px;height:16px;color:var(--teal)}
+
+/* ============ Reduced motion ============ */
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  .anim,[data-reveal]{opacity:1!important}
+  .arr{animation:none}
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#overview">Skip to content</a>
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+  <defs>
+    <linearGradient id="kgrad" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#ff8a65"/><stop offset=".5" stop-color="#c86dd7"/><stop offset="1" stop-color="#7c8cff"/>
+    </linearGradient>
+    <linearGradient id="mgrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8b9aff"/><stop offset="1" stop-color="#9f6bff"/>
+    </linearGradient>
+  </defs>
+  <symbol id="i-phone" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><line x1="10.5" y1="18" x2="13.5" y2="18"/></g></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></g></symbol>
+  <symbol id="i-db" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8.5" ry="3"/><path d="M3.5 5v14c0 1.66 3.8 3 8.5 3s8.5-1.34 8.5-3V5"/><path d="M3.5 12c0 1.66 3.8 3 8.5 3s8.5-1.34 8.5-3"/></g></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></g></symbol>
+  <symbol id="i-layout" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2.5"/><line x1="3" y1="9.5" x2="21" y2="9.5"/><line x1="9.5" y1="21" x2="9.5" y2="9.5"/></g></symbol>
+  <symbol id="i-tap" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/><path d="M13 13l6 6"/></g></symbol>
+  <symbol id="i-check-c" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></g></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="20" x2="6" y2="14"/><line x1="12" y1="20" x2="12" y2="8"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="3" y1="20" x2="21" y2="20"/></g></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1.5" y="3" width="21" height="5" rx="1"/><line x1="10" y1="12" x2="14" y2="12"/></g></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><polyline points="12 6.5 12 12 15.5 14"/></g></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></g></symbol>
+  <symbol id="i-notes" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4.5A2.5 2.5 0 0 0 2 6.5v13A2.5 2.5 0 0 0 4.5 22h13a2.5 2.5 0 0 0 2.5-2.5V13"/><path d="M18.4 2.6a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4L18.4 2.6z"/></g></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><polygon points="6.5 4 20 12 6.5 20" fill="currentColor"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><g fill="currentColor"><rect x="6" y="4.5" width="4" height="15" rx="1.2"/><rect x="14" y="4.5" width="4" height="15" rx="1.2"/></g></symbol>
+  <symbol id="i-reset" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1.5 4 1.5 10 7.5 10"/><path d="M3.6 15a9 9 0 1 0 2.1-9.4L1.5 10"/></g></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12.5" height="12.5" rx="2.5"/><path d="M5.5 15H4.5A2.5 2.5 0 0 1 2 12.5v-8A2.5 2.5 0 0 1 4.5 2h8A2.5 2.5 0 0 1 15 4.5v1"/></g></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6.5 9.5 17 4 11.5"/></g></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6.5" x2="21" y2="6.5"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="17.5" x2="21" y2="17.5"/></g></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></g></symbol>
+  <symbol id="i-up" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5.5 11.5 12 5 18.5 11.5"/></g></symbol>
+  <symbol id="i-chev-d" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></g></symbol>
+  <symbol id="i-chev-l" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="14.5 5.5 8 12 14.5 18.5"/></g></symbol>
+  <symbol id="i-chev-r" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9.5 5.5 16 12 9.5 18.5"/></g></symbol>
+  <symbol id="i-braces" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 3.5c-2.2 0-3 1-3 3v2.2c0 1.4-.9 2.5-2.5 3.3 1.6.8 2.5 1.9 2.5 3.3v2.2c0 2 .8 3 3 3"/><path d="M14.5 3.5c2.2 0 3 1 3 3v2.2c0 1.4.9 2.5 2.5 3.3-1.6.8-2.5 1.9-2.5 3.3v2.2c0 2-.8 3-3 3"/></g></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></g></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2.5H6.5A2.5 2.5 0 0 0 4 5v14a2.5 2.5 0 0 0 2.5 2.5h11A2.5 2.5 0 0 0 20 19V7.5L14 2.5z"/><polyline points="14 2.5 14 7.5 19 7.5"/><line x1="8.5" y1="13" x2="15.5" y2="13"/><line x1="8.5" y1="17" x2="13.5" y2="17"/></g></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-3.6 8-10V5.5L12 2.5 4 5.5V12c0 6.4 8 10 8 10z"/><polyline points="9 11.5 11.2 13.7 15.2 9.2"/></g></symbol>
+  <symbol id="i-xml" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 6.5 3 12 8 17.5"/><polyline points="16 6.5 21 12 16 17.5"/><line x1="13.4" y1="5" x2="10.6" y2="19"/></g></symbol>
+  <symbol id="i-zap" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></g></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></g></symbol>
+  <symbol id="i-cap" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 9.5L12 4.5 2 9.5l10 5 10-5z" fill="currentColor" stroke="none"/><path d="M6.5 12.2v4c0 1.5 2.5 2.8 5.5 2.8s5.5-1.3 5.5-2.8v-4"/><line x1="22" y1="9.5" x2="22" y2="15"/></g></symbol>
+  <symbol id="logo-kotlin" viewBox="0 0 24 24"><path fill="url(#kgrad)" d="M3 3h18l-9 9 9 9H3z"/></symbol>
+  <symbol id="logo-python" viewBox="0 0 24 24"><path fill="#4b8bbe" d="M11.9 2c-1.05 0-2 .08-2.86.25-2.53.48-2.98 1.32-2.98 2.97v2.16h6.02v.72H5.2c-1.87 0-3.5 1.12-4.02 3.26-.59 2.47-.6 4 0 6.58.46 1.9 1.55 3.23 3.42 3.23h2.21v-2.62c0-2.14 1.85-4.03 4.03-4.03h4.9c1.79 0 3.22-1.46 3.22-3.25V5.22c0-1.73-1.46-3.03-3.22-3.22-.98-.1-1.94-.13-2.83-.13zM8.57 4.19c.59 0 1.07.49 1.07 1.09 0 .6-.48 1.08-1.07 1.08-.59 0-1.08-.48-1.08-1.08 0-.6.49-1.09 1.08-1.09z"/><path fill="#ffd43b" d="M12.1 22c1.05 0 2-.08 2.86-.25 2.53-.48 2.98-1.32 2.98-2.97v-2.16H9.92v-.72h6.86c1.87 0 3.5-1.12 4.02-3.26.59-2.47.6-4 0-6.58-.46-1.9-1.55-3.23-3.42-3.23h-2.21v2.62c0 2.14-1.85 4.03-4.03 4.03h-4.9c-1.79 0-3.22 1.46-3.22 3.25v4.41c0 1.73 1.46 3.03 3.22 3.22.98.1 1.94.13 2.83.13zm3.33-2.19c-.59 0-1.07-.49-1.07-1.09 0-.6.48-1.08 1.07-1.08.59 0 1.08.48 1.08 1.08 0 .6-.49 1.09-1.08 1.09z"/></symbol>
+</svg>
+
+<div class="read-progress" id="readProgress" aria-hidden="true"></div>
+
+<header class="nav" id="nav">
+  <div class="container nav-inner">
+    <a class="brand" href="#overview" aria-label="MCQ Hub — back to top">
+      <svg class="brand-logo" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="11" fill="url(#mgrad)"/><g transform="translate(8 8.5)"><path d="M22 9.5L12 4.5 2 9.5l10 5 10-5z" fill="#fff"/><g fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 12.2v4c0 1.5 2.5 2.8 5.5 2.8s5.5-1.3 5.5-2.8v-4"/><line x1="22" y1="9.5" x2="22" y2="15"/></g></g></svg>
+      MCQ Hub <span class="brand-tag">briefing</span>
+    </a>
+    <nav aria-label="Page sections">
+      <ul class="nav-links" id="navLinks">
+        <li><a href="#overview" class="active">Overview</a></li>
+        <li><a href="#workflow">App Workflow</a></li>
+        <li><a href="#technologies">Technologies</a></li>
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#explorer">Data Explorer</a></li>
+        <li><a href="#features">Features</a></li>
+      </ul>
+    </nav>
+    <button class="btn ghost small nav-burger" id="burger" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="navLinks"><svg class="ic"><use href="#i-menu"/></svg></button>
+  </div>
+</header>
+
+<main>
+
+<!-- ================= HERO / OVERVIEW ================= -->
+<section id="overview" class="hero">
+  <div class="container">
+    <div class="hero-grid">
+      <div>
+        <span class="hero-badge anim" style="--d:.05s"><i></i>Android · Kotlin · Offline-first learning</span>
+        <h1 class="anim" style="--d:.12s">Inside <span class="grad-text">MCQ Hub</span></h1>
+        <p class="hero-sub anim" style="--d:.2s">Discover the technology, logic, and intelligent workflow powering your learning experience.</p>
+        <div class="hero-cta anim" style="--d:.28s">
+          <a class="btn primary" href="#workflow">Explore the workflow <svg class="ic"><use href="#i-chev-d"/></svg></a>
+          <a class="btn ghost" href="#architecture">View the architecture</a>
+        </div>
+        <div class="hero-cards">
+          <div class="info-card anim" style="--d:.38s">
+            <span class="ic-box"><svg class="ic"><use href="#i-phone"/></svg></span>
+            <h3>Android Educational Application</h3>
+            <p>A native Android app built for focused MCQ practice — from first tap to final score.</p>
+          </div>
+          <div class="info-card anim" style="--d:.46s">
+            <span class="ic-box"><svg class="ic"><use href="#i-code"/></svg></span>
+            <h3>Kotlin-Powered Architecture</h3>
+            <p>Screens, navigation, and the entire examination engine are written in Kotlin.</p>
+          </div>
+          <div class="info-card anim" style="--d:.54s">
+            <span class="ic-box"><svg class="ic"><use href="#i-db"/></svg></span>
+            <h3>Structured MCQ Data System</h3>
+            <p>Every question lives in a clean JSON bank: options, answers, and explanations.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-visual anim" style="--d:.3s">
+        <div class="hero-glow" aria-hidden="true"></div>
+        <span class="p" style="left:6%;top:22%" aria-hidden="true"></span>
+        <span class="p teal" style="left:16%;top:64%;animation-delay:-4s" aria-hidden="true"></span>
+        <span class="p amber" style="left:30%;top:8%;animation-delay:-8s" aria-hidden="true"></span>
+        <span class="p" style="right:8%;top:14%;animation-delay:-2s" aria-hidden="true"></span>
+        <span class="p teal" style="right:20%;top:70%;animation-delay:-6s" aria-hidden="true"></span>
+        <span class="p" style="right:32%;top:40%;animation-delay:-10s" aria-hidden="true"></span>
+        <div class="phone-wrap">
+          <div class="phone" role="img" aria-label="Illustration of the MCQ Hub app showing a quiz question with answer options and progress">
+            <div class="phone-screen" aria-hidden="true">
+              <div class="ps-status"><span>9:41</span><span class="ps-dots"><i></i><i></i><i></i></span></div>
+              <div class="ps-appbar">
+                <svg class="ps-logo" viewBox="0 0 40 40"><rect width="40" height="40" rx="11" fill="url(#mgrad)"/><g transform="translate(8 8.5)"><path d="M22 9.5L12 4.5 2 9.5l10 5 10-5z" fill="#fff"/><g fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 12.2v4c0 1.5 2.5 2.8 5.5 2.8s5.5-1.3 5.5-2.8v-4"/><line x1="22" y1="9.5" x2="22" y2="15"/></g></g></svg>
+                <strong>MCQ Hub</strong>
+                <span class="ps-theme"><svg class="ic"><use href="#i-moon"/></svg></span>
+              </div>
+              <div class="ps-subject"><span class="ps-chip">Physics</span><span class="ps-chip ghost">Current Electricity</span></div>
+              <div class="ps-progress">
+                <div class="ps-progress-top"><span>Question 7 of 12</span><b>68%</b></div>
+                <div class="ps-bar"><i style="width:68%"></i></div>
+              </div>
+              <div class="ps-q">A wire of resistance R is stretched to twice its length. Its new resistance becomes…</div>
+              <div class="ps-opts">
+                <div class="ps-opt"><b>A</b><span>R</span></div>
+                <div class="ps-opt"><b>B</b><span>2R</span></div>
+                <div class="ps-opt correct"><b>C</b><span>4R</span><span class="ps-check"><svg class="ic"><use href="#i-check"/></svg></span></div>
+                <div class="ps-opt"><b>D</b><span>R/4</span></div>
+              </div>
+              <div class="ps-foot">
+                <span class="ps-score"><svg class="ic"><use href="#i-chart"/></svg>860 pts</span>
+                <span class="ps-next">Next question</span>
+              </div>
+            </div>
+          </div>
+          <div class="float-card fc-1" aria-hidden="true">
+            <svg width="34" height="34" viewBox="0 0 36 36"><circle cx="18" cy="18" r="14" fill="none" stroke="rgba(151,168,220,.22)" stroke-width="4"/><circle cx="18" cy="18" r="14" fill="none" stroke="#2dd4a8" stroke-width="4" stroke-linecap="round" stroke-dasharray="88" stroke-dashoffset="28" transform="rotate(-90 18 18)"/></svg>
+            <div><strong>68% complete</strong><span>chapter progress</span></div>
+          </div>
+          <div class="float-card fc-2" aria-hidden="true">
+            <span class="fc-ic teal"><svg class="ic"><use href="#i-check"/></svg></span>
+            <div><strong>Correct!</strong><span>+10 points</span></div>
+          </div>
+          <div class="float-card fc-3" aria-hidden="true">
+            <span class="fc-ic"><svg class="ic"><use href="#i-braces"/></svg></span>
+            <div><strong>questions.json</strong><span>bundled question bank</span></div>
+          </div>
+          <div class="float-card fc-4" aria-hidden="true">
+            <span class="fc-ic" style="background:rgba(159,107,255,.16);color:#b28cff"><svg class="ic"><use href="#logo-kotlin"/></svg></span>
+            <div><strong>QuizEngine.kt</strong><span>exam logic</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= WORKFLOW ================= -->
+<section id="workflow">
+  <div class="container">
+    <div class="sec-head" data-reveal>
+      <span class="eyebrow">App Workflow</span>
+      <h2>How MCQ Hub Works</h2>
+      <p class="sec-lede">Follow a single attempt from launch to saved result. Select any step to see exactly what happens under the hood — every stage is implemented in the shipped app.</p>
+    </div>
+    <ol class="flow-track" id="flowTrack"></ol>
+    <div class="panel" id="flowDetail" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- ================= TECHNOLOGIES ================= -->
+<section id="technologies">
+  <div class="container">
+    <div class="sec-head" data-reveal>
+      <span class="eyebrow">Technology Stack</span>
+      <h2>Six Technologies, Six Jobs</h2>
+      <p class="sec-lede">From the Kotlin code running in your pocket to the Python scripts that keep question data clean — every technology in the project has a distinct, well-defined role.</p>
+    </div>
+    <div class="tech-grid">
+      <article class="tech-card" data-reveal>
+        <div class="tech-top">
+          <span class="tech-ic tint-indigo"><svg class="ic"><use href="#logo-kotlin"/></svg></span>
+          <div class="tech-id"><h3>Kotlin</h3><span class="tech-ext">.kt</span></div>
+          <span class="badge runtime">Runs in app</span>
+        </div>
+        <p class="tech-role">The core of MCQ Hub — every screen, the navigation flow, and the entire examination logic are written in Kotlin.</p>
+        <div class="tech-files"><span class="file-chip">MainActivity.kt</span><span class="file-chip">QuizActivity.kt</span><span class="file-chip">QuizEngine.kt</span><span class="file-chip">Question.kt</span></div>
+        <div class="tech-detail"><div><p>The code is organized into packages for UI, exam logic, data, and models. Activities and fragments render the interface, while plain Kotlin classes — QuizEngine, AnswerValidator, ProgressTracker — hold the exam rules, keeping them independent of the UI and easy to test.</p></div></div>
+        <button class="tech-more" aria-expanded="false"><span>Technical details</span><svg class="ic"><use href="#i-chev-d"/></svg></button>
+      </article>
+
+      <article class="tech-card" data-reveal style="--d:.06s">
+        <div class="tech-top">
+          <span class="tech-ic tint-slate"><svg class="ic"><use href="#logo-python"/></svg></span>
+          <div class="tech-id"><h3>Python</h3><span class="tech-ext">.py</span></div>
+          <span class="badge dev">Dev-time only</span>
+        </div>
+        <p class="tech-role">Development utilities that validate the question JSON, check schema consistency, and build or merge question banks before a release.</p>
+        <div class="tech-files"><span class="file-chip">tools/validate_questions.py</span><span class="file-chip">tools/build_bank.py</span></div>
+        <div class="tech-detail"><div><p>Python runs on the developer's machine or in CI — it is never packaged into the Android app. The scripts catch malformed JSON, duplicate question IDs, missing explanations, and badly distributed correct answers, keeping every bundled bank trustworthy.</p></div></div>
+        <button class="tech-more" aria-expanded="false"><span>Technical details</span><svg class="ic"><use href="#i-chev-d"/></svg></button>
+      </article>
+
+      <article class="tech-card" data-reveal style="--d:.12s">
+        <div class="tech-top">
+          <span class="tech-ic tint-rose"><svg class="ic"><use href="#i-xml"/></svg></span>
+          <div class="tech-id"><h3>XML</h3><span class="tech-ext">.xml</span></div>
+          <span class="badge build">Compiled into app</span>
+        </div>
+        <p class="tech-role">Android configuration and resources: the manifest and permissions, every screen layout, drawables, themes, and colors.</p>
+        <div class="tech-files"><span class="file-chip">AndroidManifest.xml</span><span class="file-chip">activity_quiz.xml</span><span class="file-chip">themes.xml</span></div>
+        <div class="tech-detail"><div><p>Layout files define the structure of each screen; drawable XML creates rounded cards and option states; the manifest declares the app's permissions and registers its activities. All of it is compiled into the app at build time.</p></div></div>
+        <button class="tech-more" aria-expanded="false"><span>Technical details</span><svg class="ic"><use href="#i-chev-d"/></svg></button>
+      </article>
+
+      <article class="tech-card" data-reveal style="--d:.05s">
+        <div class="tech-top">
+          <span class="tech-ic tint-amber"><svg class="ic"><use href="#i-braces"/></svg></span>
+          <div class="tech-id"><h3>JSON</h3><span class="tech-ext">.json</span></div>
+          <span class="badge runtime">Bundled asset</span>
+        </div>
+        <p class="tech-role">The content layer: question text, four options, the correct answer index, explanations, and subject/chapter metadata.</p>
+        <div class="tech-files"><span class="file-chip">assets/questions/physics.json</span><span class="file-chip">assets/questions/chemistry.json</span><span class="file-chip">subjects.json</span></div>
+        <div class="tech-detail"><div><p>Each question is a self-contained JSON object, so shipping a new chapter means adding one file — no code changes. The app parses these files from its bundled assets at runtime, which is what keeps the whole app fully offline.</p></div></div>
+        <button class="tech-more" aria-expanded="false"><span>Technical details</span><svg class="ic"><use href="#i-chev-d"/></svg></button>
+      </article>
+
+      <article class="tech-card" data-reveal style="--d:.11s">
+        <div class="tech-top">
+          <span class="tech-ic tint-teal"><svg class="ic"><use href="#i-gear"/></svg></span>
+          <div class="tech-id"><h3>Gradle Kotlin DSL</h3><span class="tech-ext">.gradle.kts</span></div>
+          <span class="badge build">Build-time</span>
+        </div>
+        <p class="tech-role">The build system: dependency management, Android SDK configuration, resource processing, signing, and APK/AAB packaging.</p>
+        <div class="tech-files"><span class="file-chip">build.gradle.kts</span><span class="file-chip">settings.gradle.kts</span><span class="file-chip">gradle.properties</span></div>
+        <div class="tech-detail"><div><p>Build scripts are written in the Kotlin DSL, making them type-safe and IDE-friendly. One Gradle task graph compiles Kotlin, processes XML resources, and produces the installable package you put on a device.</p></div></div>
+        <button class="tech-more" aria-expanded="false"><span>Technical details</span><svg class="ic"><use href="#i-chev-d"/></svg></button>
+      </article>
+
+      <article class="tech-card" data-reveal style="--d:.17s">
+        <div class="tech-top">
+          <span class="tech-ic tint-violet"><svg class="ic"><use href="#i-file"/></svg></span>
+          <div class="tech-id"><h3>Markdown &amp; Properties</h3><span class="tech-ext">.md · .properties</span></div>
+          <span class="badge dev">Dev-time</span>
+        </div>
+        <p class="tech-role">Project documentation and simple key-value configuration — authoring guides, README, version and flag settings.</p>
+        <div class="tech-files"><span class="file-chip">README.md</span><span class="file-chip">docs/question-format.md</span><span class="file-chip">gradle.properties</span></div>
+        <div class="tech-detail"><div><p>Markdown guides keep contributors aligned on the question schema and app conventions; .properties files hold small configuration values consumed by the build and tooling — neither ever ships inside the app.</p></div></div>
+        <button class="tech-more" aria-expanded="false"><span>Technical details</span><svg class="ic"><use href="#i-chev-d"/></svg></button>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ================= ARCHITECTURE ================= -->
+<section id="architecture">
+  <div class="container">
+    <div class="sec-head" data-reveal>
+      <span class="eyebrow">Architecture</span>
+      <h2>One System, Clear Layers</h2>
+      <p class="sec-lede">How the app's components fit together — runtime layers inside the installed app, and the development-time tools that support them. Select any layer or tool to inspect it.</p>
+    </div>
+    <div class="arch-wrap" data-reveal>
+      <div class="arch-scroll">
+        <svg class="arch-svg" viewBox="0 0 1040 600" role="group" aria-label="Interactive architecture diagram of MCQ Hub. Select a layer to learn more.">
+          <rect class="rt-box" x="16" y="16" width="712" height="568" rx="24"/>
+          <text class="svg-cap" x="44" y="50">RUNTIME · INSIDE THE INSTALLED APP</text>
+
+          <line class="arr" x1="200" y1="380" x2="200" y2="350"/>
+          <polygon class="arr-h" points="200,338 193,351 207,351"/>
+          <line class="arr" x1="544" y1="380" x2="544" y2="350"/>
+          <polygon class="arr-h" points="544,338 537,351 551,351"/>
+          <polygon class="arr-h" points="544,392 537,379 551,379"/>
+          <line class="arr" x1="372" y1="220" x2="372" y2="190"/>
+          <polygon class="arr-h" points="372,178 365,191 379,191"/>
+          <text class="arr-label" x="214" y="368">loads</text>
+          <text class="arr-label" x="558" y="368">state</text>
+          <text class="arr-label" x="386" y="209">renders</text>
+
+          <g class="layer" data-layer="presentation" tabindex="0" role="button" aria-label="Presentation layer: Android screens and UI components">
+            <rect class="lb" x="40" y="64" width="664" height="120" rx="16"/>
+            <text class="layer-title" x="60" y="92">PRESENTATION</text>
+            <text class="layer-sub" x="172" y="92">screens &amp; UI components</text>
+            <rect class="chip-r" x="56" y="106" width="146" height="44" rx="10"/>
+            <text class="chip-t" x="129" y="133" text-anchor="middle">Home &amp; Subjects</text>
+            <rect class="chip-r" x="214" y="106" width="146" height="44" rx="10"/>
+            <text class="chip-t" x="287" y="133" text-anchor="middle">Quiz Screen</text>
+            <rect class="chip-r" x="372" y="106" width="146" height="44" rx="10"/>
+            <text class="chip-t" x="445" y="133" text-anchor="middle">Result Screen</text>
+            <rect class="chip-r" x="530" y="106" width="146" height="44" rx="10"/>
+            <text class="chip-t" x="603" y="133" text-anchor="middle">Settings</text>
+          </g>
+
+          <g class="layer" data-layer="logic" tabindex="0" role="button" aria-label="Application logic layer: navigation, quiz engine, answer validation">
+            <rect class="lb" x="40" y="224" width="664" height="120" rx="16"/>
+            <text class="layer-title" x="60" y="252">APPLICATION LOGIC</text>
+            <text class="layer-sub" x="216" y="252">navigation · quiz state · rules</text>
+            <rect class="chip-r" x="56" y="266" width="146" height="44" rx="10"/>
+            <text class="chip-t" x="129" y="293" text-anchor="middle">Navigation</text>
+            <rect class="chip-r" x="214" y="266" width="146" height="44" rx="10"/>
+            <text class="chip-t" x="287" y="293" text-anchor="middle">QuizEngine</text>
+            <rect class="chip-r" x="372" y="266" width="146" height="44" rx="10"/>
+            <text class="chip-t" x="445" y="293" text-anchor="middle">AnswerValidator</text>
+            <rect class="chip-r" x="530" y="266" width="146" height="44" rx="10"/>
+            <text class="chip-t" x="603" y="293" text-anchor="middle">ProgressTracker</text>
+          </g>
+
+          <g class="layer" data-layer="content" tabindex="0" role="button" aria-label="Content layer: JSON question banks and subject index">
+            <rect class="lb" x="40" y="384" width="320" height="120" rx="16"/>
+            <text class="layer-title" x="58" y="412">CONTENT</text>
+            <text class="layer-sub" x="142" y="412">question banks</text>
+            <rect class="chip-r" x="56" y="426" width="136" height="40" rx="10"/>
+            <text class="chip-t" x="124" y="451" text-anchor="middle">JSON banks</text>
+            <rect class="chip-r" x="204" y="426" width="136" height="40" rx="10"/>
+            <text class="chip-t" x="272" y="451" text-anchor="middle">subjects.json</text>
+          </g>
+
+          <g class="layer" data-layer="persistence" tabindex="0" role="button" aria-label="Persistence layer: local storage for settings and history">
+            <rect class="lb" x="384" y="384" width="320" height="120" rx="16"/>
+            <text class="layer-title" x="402" y="412">PERSISTENCE</text>
+            <text class="layer-sub" x="514" y="412">local storage</text>
+            <rect class="chip-r" x="400" y="426" width="136" height="40" rx="10"/>
+            <text class="chip-t" x="468" y="451" text-anchor="middle">SharedPreferences</text>
+            <rect class="chip-r" x="548" y="426" width="136" height="40" rx="10"/>
+            <text class="chip-t" x="616" y="451" text-anchor="middle">History store</text>
+          </g>
+
+          <text class="svg-note" x="372" y="556" text-anchor="middle">100% offline — questions, history &amp; settings live on the device</text>
+
+          <rect class="dev-box" x="748" y="16" width="276" height="568" rx="24"/>
+          <text class="svg-cap amber" x="772" y="50">DEVELOPMENT TIME</text>
+
+          <line class="arr arr-dev" x1="886" y1="218" x2="886" y2="248"/>
+          <polygon class="arr-h amber" points="886,240 879,253 893,253"/>
+          <line class="arr arr-dev" x1="886" y1="408" x2="886" y2="438"/>
+          <polygon class="arr-h amber" points="886,430 879,443 893,443"/>
+          <line class="arr arr-dev" x1="766" y1="486" x2="742" y2="486"/>
+          <polygon class="arr-h amber" points="732,486 745,479 745,493"/>
+
+          <g class="layer" data-layer="python" tabindex="0" role="button" aria-label="Python utilities: development-time validation and bank generation scripts">
+            <rect class="lb dev-lb" x="772" y="64" width="228" height="150" rx="16"/>
+            <text class="layer-title amber" x="790" y="92">PYTHON UTILITIES</text>
+            <text class="file-t" x="790" y="118">validate_questions.py</text>
+            <text class="file-t" x="790" y="140">build_bank.py</text>
+            <text class="svg-note" x="790" y="168">Validate &amp; generate</text>
+            <text class="svg-note" x="790" y="186">question banks</text>
+          </g>
+
+          <g class="layer" data-layer="gradle" tabindex="0" role="button" aria-label="Gradle build system: compiles and packages the app">
+            <rect class="lb dev-lb" x="772" y="254" width="228" height="150" rx="16"/>
+            <text class="layer-title amber" x="790" y="282">GRADLE · KOTLIN DSL</text>
+            <text class="file-t" x="790" y="308">build.gradle.kts</text>
+            <text class="file-t" x="790" y="330">settings.gradle.kts</text>
+            <text class="svg-note" x="790" y="358">Compile &amp; package</text>
+            <text class="svg-note" x="790" y="376">the app into an APK</text>
+          </g>
+
+          <rect class="apk-box" x="772" y="444" width="228" height="84" rx="16"/>
+          <text class="apk-t" x="886" y="483" text-anchor="middle">MCQ Hub.apk</text>
+          <text class="svg-note" x="886" y="505" text-anchor="middle">installable package</text>
+        </svg>
+      </div>
+      <p class="scroll-hint">Swipe the diagram sideways to see every layer →</p>
+      <div class="arch-legend">
+        <span class="legend-item"><span class="legend-line"></span>Runtime — runs inside the installed app</span>
+        <span class="legend-item"><span class="legend-line dashed"></span>Development-time — build &amp; content tooling</span>
+      </div>
+    </div>
+    <div class="panel arch-detail" id="archDetail" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- ================= DATA EXPLORER ================= -->
+<section id="explorer">
+  <div class="container">
+    <div class="sec-head" data-reveal>
+      <span class="eyebrow">MCQ Data Explorer</span>
+      <h2>Inside a Question</h2>
+      <p class="sec-lede">A representative question from the bundled JSON bank. See it exactly as a student does — then inspect the raw data behind it. Try answering it yourself.</p>
+    </div>
+    <div class="explorer" data-reveal>
+      <div class="explorer-toolbar">
+        <div class="q-nav">
+          <button class="q-btn" id="qPrev" aria-label="Previous question"><svg class="ic"><use href="#i-chev-l"/></svg></button>
+          <span class="q-count" id="qIndicator">Question 1 of 3</span>
+          <button class="q-btn" id="qNext" aria-label="Next question"><svg class="ic"><use href="#i-chev-r"/></svg></button>
+        </div>
+        <div class="seg" role="tablist" aria-label="Question view mode">
+          <button class="seg-btn active" id="segStudent" role="tab" aria-selected="true" data-view="student">Student View</button>
+          <button class="seg-btn" id="segData" role="tab" aria-selected="false" data-view="data">Data View</button>
+        </div>
+        <button class="btn ghost small" id="copyJson"><svg class="ic"><use href="#i-copy"/></svg>Copy JSON</button>
+      </div>
+      <div class="explorer-body">
+        <div class="student-view" id="studentView" role="tabpanel" aria-labelledby="segStudent">
+          <div class="meta-chips">
+            <span class="meta-chip subject" id="svSubject">Physics</span>
+            <span class="meta-chip" id="svChapter">Current Electricity</span>
+            <span class="meta-chip diff medium" id="svDiff">medium</span>
+          </div>
+          <p class="q-text" id="svText"></p>
+          <div class="options" id="svOptions"></div>
+          <div class="feedback" id="svFeedback"></div>
+          <button class="btn primary small sv-next" id="svNext" style="display:none">Next question <svg class="ic"><use href="#i-chev-r"/></svg></button>
+        </div>
+        <pre class="data-view hidden" id="dataView" role="tabpanel" aria-labelledby="segData"><code id="jsonCode"></code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= DATA FLOW ================= -->
+<section id="dataflow">
+  <div class="container">
+    <div class="sec-head" data-reveal>
+      <span class="eyebrow">Data Flow</span>
+      <h2>Watch a Question Travel</h2>
+      <p class="sec-lede">Press play to follow one question through every stage of the system — from the JSON file to the saved result. Every single stage runs locally on the device.</p>
+    </div>
+    <div class="flowviz" data-reveal>
+      <div class="flowviz-scroll">
+        <svg id="flowSvg" class="flow-svg" viewBox="0 0 1000 320" role="group" aria-label="Animated diagram showing how a question moves through the MCQ Hub system">
+          <path id="flowPath" class="flow-path" d="M125 95 H875 V255 H125"/>
+          <circle id="flowDot" r="7" cx="125" cy="95"/>
+          <g id="flowNodes"></g>
+        </svg>
+      </div>
+      <p class="scroll-hint">Swipe the diagram sideways to see all eight stages →</p>
+      <div class="flowviz-controls">
+        <button class="btn primary" id="playPause" aria-pressed="false"><svg class="ic"><use href="#i-play"/></svg><span>Play Data Flow</span></button>
+        <button class="btn ghost" id="resetFlow"><svg class="ic"><use href="#i-reset"/></svg><span>Reset</span></button>
+        <span class="flowviz-note"><svg class="ic"><use href="#i-shield"/></svg>Every stage runs locally — no network required</span>
+      </div>
+      <div class="stage-info" id="stageInfo" aria-live="polite">
+        <div class="stage-num" id="stageNum">01</div>
+        <div class="stage-text">
+          <h3 id="stageTitle">JSON Question Bank</h3>
+          <p id="stageDesc"></p>
+        </div>
+        <span class="stage-badge"><svg class="ic"><use href="#i-shield"/></svg>On-device · local</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FEATURES ================= -->
+<section id="features">
+  <div class="container">
+    <div class="sec-head" data-reveal>
+      <span class="eyebrow">Features</span>
+      <h2>Feature Mechanisms</h2>
+      <p class="sec-lede">What MCQ Hub does for learners — and the mechanism that powers each implemented feature.</p>
+    </div>
+    <div class="feat-grid">
+      <article class="feat-card" data-reveal>
+        <span class="feat-ic"><svg class="ic"><use href="#i-map"/></svg></span>
+        <h3>Subject &amp; Chapter Navigation</h3>
+        <p>A browsable library: pick a subject, drill into a chapter, and open its question set.</p>
+        <div class="tech-detail"><div><p>Subjects and chapters come from a lightweight JSON index. Screens swap through the app's navigation component, and the back stack keeps browsing predictable.</p></div></div>
+        <button class="tech-more" aria-expanded="false"><span>Technical details</span><svg class="ic"><use href="#i-chev-d"/></svg></button>
+      </article>
+      <article class="feat-card" data-reveal style="--d:.05s">
+        <span class="feat-ic"><svg class="ic"><use href="#i-tap"/></svg></span>
+        <h3>MCQ Practice</h3>
+        <p>One question at a time: four options, a progress header, and a clean, focused layout.</p>
+        <div class="tech-detail"><div><p>The quiz screen renders each question from the loaded bank and moves forward question by question — no dead ends, no clutter.</p></div></div>
+        <button class="tech-more" aria-expanded="false"><span>Technical details</span><svg class="ic"><use href="#i-chev-d"/></svg></button>
+      </article>
+      <article class="feat-card" data-reveal style="--d:.1s">
+        <span class="feat-ic"><svg class="ic"><use href="#i-check-c"/></svg></span>
+        <h3>Answer Validation</h3>
+        <p>The moment an option is tapped, the app checks it against the stored answer.</p>
+        <div class="tech-detail"><div><p>AnswerValidator compares the selected index with correctIndex from the JSON — an instant, private, on-device check with no network involved.</p></div></div>
+        <button class="tech-more" aria-expanded="false"><span>Technical details</span><svg class="ic"><use href="#i-chev-d"/></svg></button>
+      </article>
+      <article class="feat-card" data-reveal style="--d:.15s">
+        <span class="feat-ic"><svg class="ic"><use href="#i-chart"/></svg></span>
+        <h3>Results &amp; Progress</h3>
+        <p>Score, accuracy, and streaks after every attempt, plus progress for each chapter.</p>
+        <div class="tech-detail"><div><p>ProgressTracker aggregates the current attempt in memory and mirrors the totals to local storage, feeding the results and statistics screens.</p></div></div>
+        <button class="tech-more" aria-expanded="false"><span>Technical details</span><svg class="ic"><use href="#i-chev-d"/></svg></button>
+      </article>
+      <article class="feat-card" data-reveal style="--d:.05s">
+        <span class="feat-ic"><svg class="ic"><use href="#i-clock"/></svg></span>
+        <h3>Exam History</h3>
+        <p>Every attempt is saved with its date, score, and the questions you reviewed.</p>
+        <div class="tech-detail"><div><p>HistoryStore appends each attempt as a JSON record in local storage; the history screen renders the list with dates and scores.</p></div></div>
+        <button class="tech-more" aria-expanded="false"><span>Technical details</span><svg class="ic"><use href="#i-chev-d"/></svg></button>
+      </article>
+      <article class="feat-card" data-reveal style="--d:.1s">
+        <span class="feat-ic"><svg class="ic"><use href="#i-notes"/></svg></span>
+        <h3>Revision Notes</h3>
+        <p>Flag any question while practicing and revisit it later from a dedicated list.</p>
+        <div class="tech-detail"><div><p>Flagged question IDs are kept in a small local set and surfaced in a revision screen, so weak spots are easy to re-practice.</p></div></div>
+        <button class="tech-more" aria-expanded="false"><span>Technical details</span><svg class="ic"><use href="#i-chev-d"/></svg></button>
+      </article>
+      <article class="feat-card" data-reveal style="--d:.15s">
+        <span class="feat-ic"><svg class="ic"><use href="#i-moon"/></svg></span>
+        <h3>Theme Settings</h3>
+        <p>Switch between dark and light themes — the choice is remembered on every launch.</p>
+        <div class="tech-detail"><div><p>The theme preference lives in SharedPreferences and is applied at startup, before the first frame is drawn.</p></div></div>
+        <button class="tech-more" aria-expanded="false"><span>Technical details</span><svg class="ic"><use href="#i-chev-d"/></svg></button>
+      </article>
+      <article class="feat-card" data-reveal style="--d:.2s">
+        <span class="feat-ic"><svg class="ic"><use href="#i-save"/></svg></span>
+        <h3>Local Data Storage</h3>
+        <p>Fully offline: questions, history, and settings all live on the device.</p>
+        <div class="tech-detail"><div><p>Bundled assets hold the content, SharedPreferences holds settings, and a JSON file holds history. No account and no server required.</p></div></div>
+        <button class="tech-more" aria-expanded="false"><span>Technical details</span><svg class="ic"><use href="#i-chev-d"/></svg></button>
+      </article>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ================= FOOTER ================= -->
+<footer>
+  <div class="container">
+    <div class="foot-inner">
+      <div class="foot-brand">
+        <svg class="brand-logo" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="11" fill="url(#mgrad)"/><g transform="translate(8 8.5)"><path d="M22 9.5L12 4.5 2 9.5l10 5 10-5z" fill="#fff"/><g fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 12.2v4c0 1.5 2.5 2.8 5.5 2.8s5.5-1.3 5.5-2.8v-4"/><line x1="22" y1="9.5" x2="22" y2="15"/></g></g></svg>
+        MCQ Hub
+      </div>
+      <span class="foot-tag">Learn · Practice · Master</span>
+      <p class="foot-desc">A native Android MCQ learning app — Kotlin screens, structured JSON question banks, and fully offline progress tracking. This briefing page explains how the app works, inside and out.</p>
+      <button class="btn ghost" id="footTop">Back to top <svg class="ic"><use href="#i-up"/></svg></button>
+    </div>
+    <div class="foot-bottom">
+      <span>Inside MCQ Hub · App mechanism &amp; architecture briefing</span>
+      <span>Runs 100% on-device — no servers, no accounts</span>
+    </div>
+  </div>
+</footer>
+
+<button class="to-top" id="toTop" aria-label="Back to top"><svg class="ic"><use href="#i-up"/></svg></button>
+<div class="toast" id="toast" role="status" aria-live="polite"><svg class="ic"><use href="#i-check"/></svg><span id="toastMsg"></span></div>
+<script>
+(function(){
+'use strict';
+var $=function(s,c){return (c||document).querySelector(s);};
+var $$=function(s,c){return Array.prototype.slice.call((c||document).querySelectorAll(s));};
+var reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- Toast ---------- */
+var toastTimer;
+function toast(msg){
+  var t=$('#toast');
+  $('#toastMsg').textContent=msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){t.classList.remove('show');},2300);
+}
+
+/* ---------- Navigation: mobile menu, scroll state, progress bar ---------- */
+var nav=$('#nav'),burger=$('#burger'),navLinks=$('#navLinks');
+burger.addEventListener('click',function(){
+  var open=navLinks.classList.toggle('open');
+  burger.setAttribute('aria-expanded',open?'true':'false');
+  burger.querySelector('use').setAttribute('href',open?'#i-x':'#i-menu');
+});
+$$('#navLinks a').forEach(function(a){
+  a.addEventListener('click',function(){
+    navLinks.classList.remove('open');
+    burger.setAttribute('aria-expanded','false');
+    burger.querySelector('use').setAttribute('href','#i-menu');
+  });
+});
+
+var bar=$('#readProgress'),toTop=$('#toTop');
+function onScroll(){
+  var st=window.scrollY||window.pageYOffset;
+  var h=document.documentElement.scrollHeight-window.innerHeight;
+  bar.style.width=(h>0?(st/h*100):0)+'%';
+  nav.classList.toggle('scrolled',st>10);
+  toTop.classList.toggle('show',st>600);
+}
+window.addEventListener('scroll',onScroll,{passive:true});
+onScroll();
+function goTop(){window.scrollTo({top:0,behavior:reduced?'auto':'smooth'});}
+toTop.addEventListener('click',goTop);
+$('#footTop').addEventListener('click',goTop);
+
+/* ---------- Scrollspy ---------- */
+var spy=new IntersectionObserver(function(entries){
+  entries.forEach(function(e){
+    if(e.isIntersecting){
+      $$('.nav-links a').forEach(function(a){
+        a.classList.toggle('active',a.getAttribute('href')==='#'+e.target.id);
+      });
+    }
+  });
+},{rootMargin:'-38% 0px -55% 0px'});
+$$('.nav-links a').forEach(function(a){
+  var el=$(a.getAttribute('href'));
+  if(el)spy.observe(el);
+});
+
+/* ---------- Scroll reveal ---------- */
+var ro=new IntersectionObserver(function(entries){
+  entries.forEach(function(e){
+    if(e.isIntersecting){e.target.classList.add('in-view');ro.unobserve(e.target);}
+  });
+},{threshold:.1,rootMargin:'0px 0px -36px 0px'});
+$$('[data-reveal]').forEach(function(el){
+  if(reduced){el.classList.add('in-view');}else{ro.observe(el);}
+});
+
+/* ---------- App workflow: steps + detail panel ---------- */
+var steps=[
+  {n:'01',icon:'i-phone',title:'Launch the app',short:'MCQ Hub opens on the home screen.',
+   desc:'MCQ Hub opens straight onto the home screen. The saved theme is applied and the subject library is ready instantly — no splash waits, no network calls.',
+   tech:'Cold start is instant; theme restored from local settings.',files:['MainActivity.kt','HomeFragment.kt']},
+  {n:'02',icon:'i-map',title:'Pick a subject & chapter',short:'Browse subjects, drill into a chapter.',
+   desc:'The learner browses the subject library, then drills into a chapter to open its question set. Subjects and chapters come from a lightweight JSON index.',
+   tech:'The index is read once and cached in memory.',files:['subjects.json','ChapterListFragment.kt']},
+  {n:'03',icon:'i-db',title:'Load question data',short:'The chapter\u2019s JSON question bank is read.',
+   desc:'The app reads the chapter\u2019s JSON question bank from its bundled assets and parses it into Kotlin data classes — fully offline, on demand.',
+   tech:'Questions are parsed from app assets into Kotlin data classes.',files:['assets/questions/*.json','QuestionRepository.kt']},
+  {n:'04',icon:'i-layout',title:'Render the quiz screen',short:'Questions and options appear on screen.',
+   desc:'The quiz screen renders: the question text, four answer options, and a progress header showing question x of y — all defined by XML layouts and bound by Kotlin.',
+   tech:'XML layouts define the screen; Kotlin binds data to views.',files:['activity_quiz.xml','QuizActivity.kt','QuestionAdapter.kt']},
+  {n:'05',icon:'i-tap',title:'Answer a question',short:'The user taps one of four options.',
+   desc:'The learner taps one of the four options. The selection is highlighted immediately and held in the quiz engine\u2019s state until evaluation.',
+   tech:'The selection is stored in the quiz engine\u2019s state.',files:['QuizEngine.kt','QuizActivity.kt']},
+  {n:'06',icon:'i-check-c',title:'Evaluate the answer',short:'The engine checks it against the stored answer.',
+   desc:'The engine evaluates the answer by comparing the selected option index with the correct answer stored in the question\u2019s JSON — a pure, instant, on-device check.',
+   tech:'A pure function: selected index vs. correctIndex — nothing else.',files:['AnswerValidator.kt','Question.kt']},
+  {n:'07',icon:'i-chart',title:'Show result & feedback',short:'Correct or incorrect, with an explanation.',
+   desc:'The result appears instantly: the correct option is highlighted, the explanation is revealed, and the running score and streak update on screen.',
+   tech:'Feedback, explanation, and score update in place.',files:['FeedbackView.kt','ScoreBoard.kt']},
+  {n:'08',icon:'i-save',title:'Save progress & history',short:'The attempt is written to local storage.',
+   desc:'The attempt — score, answers, and date — is written to local history, and per-chapter progress is updated. No account and no server are ever needed.',
+   tech:'Attempts append to a local JSON history; progress counters update.',files:['HistoryStore.kt','ProgressStore.kt']}
+];
+var track=$('#flowTrack'),flowDetail=$('#flowDetail');
+steps.forEach(function(s,i){
+  var li=document.createElement('li');
+  li.setAttribute('data-reveal','');
+  li.style.setProperty('--d',(i*0.05)+'s');
+  if(reduced){li.classList.add('in-view');}else{ro.observe(li);}
+  li.innerHTML='<button class="flow-step'+(i===0?' active':'')+'" data-i="'+i+'" aria-pressed="'+(i===0)+'">'+
+    '<span class="flow-node"><svg class="ic" aria-hidden="true"><use href="#'+s.icon+'"/></svg></span>'+
+    '<span class="flow-text"><span class="flow-num">STEP '+s.n+'</span>'+
+    '<span class="flow-title">'+s.title+'</span>'+
+    '<span class="flow-short">'+s.short+'</span></span></button>';
+  track.appendChild(li);
+});
+function renderStep(i){
+  var s=steps[i];
+  $$('.flow-step',track).forEach(function(b,j){
+    b.classList.toggle('active',j===i);
+    b.setAttribute('aria-pressed',j===i?'true':'false');
+  });
+  flowDetail.innerHTML=
+    '<div><span class="fd-chip"><svg class="ic"><use href="#i-check-c"/></svg>Step '+s.n+' · Implemented</span>'+
+    '<h3>'+s.title+'</h3><p class="fd-desc">'+s.desc+'</p>'+
+    '<p class="fd-tech"><svg class="ic"><use href="#i-zap"/></svg>'+s.tech+'</p>'+
+    '<div class="tech-files">'+s.files.map(function(f){return '<span class="file-chip">'+f+'</span>';}).join('')+'</div></div>'+
+    '<div class="fd-nav">'+
+    '<button class="btn ghost small" id="stepPrev"'+(i===0?' disabled':'')+'><svg class="ic"><use href="#i-chev-l"/></svg>Previous</button>'+
+    '<button class="btn ghost small" id="stepNext"'+(i===steps.length-1?' disabled':'')+'>Next<svg class="ic"><use href="#i-chev-r"/></svg></button>'+
+    '</div>';
+  flowDetail.classList.remove('swap');void flowDetail.offsetWidth;flowDetail.classList.add('swap');
+  var prev=$('#stepPrev'),next=$('#stepNext');
+  if(prev)prev.addEventListener('click',function(){renderStep(i-1);});
+  if(next)next.addEventListener('click',function(){renderStep(i+1);});
+}
+track.addEventListener('click',function(e){
+  var b=e.target.closest('.flow-step');
+  if(b)renderStep(+b.getAttribute('data-i'));
+});
+renderStep(0);
+
+/* ---------- Expandable cards (technologies + features) ---------- */
+$$('.tech-more').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    var card=btn.closest('.tech-card, .feat-card');
+    var open=card.classList.toggle('open');
+    btn.setAttribute('aria-expanded',open?'true':'false');
+    var label=btn.querySelector('span');
+    if(label)label.textContent=open?'Hide details':'Technical details';
+  });
+});
+
+/* ---------- Architecture diagram ---------- */
+var layers={
+  presentation:{name:'Presentation Layer',kind:'runtime',title:'Screens & UI components',
+    desc:'Android screens built from XML layouts and rendered by Kotlin activities and fragments — the home and subject library, the chapter list, the quiz screen, results, history, and settings.',
+    files:['MainActivity.kt','HomeFragment.kt','QuizActivity.kt','ResultActivity.kt','activity_quiz.xml','themes.xml']},
+  logic:{name:'Application Logic',kind:'runtime',title:'Navigation, quiz state & rules',
+    desc:'Navigation, quiz state, answer validation, and progress tracking — plain Kotlin classes with no UI dependencies, so the exam rules stay easy to test and reuse.',
+    files:['QuizEngine.kt','AnswerValidator.kt','ProgressTracker.kt','AppNavigation.kt']},
+  content:{name:'Content Layer',kind:'runtime',title:'JSON question banks',
+    desc:'JSON question banks bundled inside the app as read-only assets, plus the subject and chapter index. Content ships with the app — there is no server to fetch from.',
+    files:['assets/questions/physics.json','assets/questions/chemistry.json','subjects.json','Question.kt']},
+  persistence:{name:'Persistence Layer',kind:'runtime',title:'Local storage',
+    desc:'Local-only storage: SharedPreferences holds theme and app settings; a JSON-backed store keeps exam history and progress. No account, no cloud — everything stays on the device.',
+    files:['HistoryStore.kt','ProgressStore.kt','SettingsStore.kt']},
+  python:{name:'Python Utilities',kind:'dev',title:'Content tooling (never shipped)',
+    desc:'Helper scripts that run on a developer machine or CI: they validate question JSON against the schema, catch duplicate IDs or missing explanations, and build or merge question banks before a release. They never run inside the app.',
+    files:['tools/validate_questions.py','tools/build_bank.py']},
+  gradle:{name:'Gradle Build System',kind:'dev',title:'Build-time packaging',
+    desc:'The Gradle Kotlin DSL wires the whole build: Kotlin and XML compilation, dependency resolution, resource processing, signing, and packaging the final APK/AAB you install.',
+    files:['build.gradle.kts','settings.gradle.kts','gradle.properties']}
+};
+var archDetail=$('#archDetail');
+function renderLayer(key){
+  var L=layers[key];if(!L)return;
+  $$('.arch-svg .layer').forEach(function(g){g.classList.toggle('selected',g.getAttribute('data-layer')===key);});
+  var chipClass=L.kind==='dev'?'fd-chip dev':'fd-chip';
+  var chipText=L.kind==='dev'?'Development-time tool':'Runtime · inside the app';
+  archDetail.innerHTML=
+    '<div><span class="'+chipClass+'"><svg class="ic"><use href="#i-layers"/></svg>'+L.name+' · '+chipText+'</span>'+
+    '<h3>'+L.title+'</h3><p class="fd-desc">'+L.desc+'</p>'+
+    '<div class="tech-files">'+L.files.map(function(f){return '<span class="file-chip">'+f+'</span>';}).join('')+'</div></div>';
+  archDetail.classList.remove('swap');void archDetail.offsetWidth;archDetail.classList.add('swap');
+}
+$$('.arch-svg .layer').forEach(function(g){
+  g.addEventListener('click',function(){renderLayer(g.getAttribute('data-layer'));});
+  g.addEventListener('keydown',function(e){
+    if(e.key==='Enter'||e.key===' '){e.preventDefault();renderLayer(g.getAttribute('data-layer'));}
+  });
+});
+renderLayer('logic');
+
+/* ---------- MCQ Data Explorer ---------- */
+var questions=[
+  {id:'phy-ce-07',subject:'Physics',chapter:'Current Electricity',difficulty:'medium',
+   question:'A wire of resistance R is stretched until its length becomes twice the original. If its volume stays constant, what is its new resistance?',
+   options:['R/2','R','2R','4R'],correctIndex:3,
+   explanation:'With volume constant, doubling the length halves the cross-sectional area. Since R = \u03C1L/A, the new resistance is \u03C1(2L)/(A/2) = 4R.'},
+  {id:'chem-pt-12',subject:'Chemistry',chapter:'Periodic Table',difficulty:'easy',
+   question:'Which element has the highest electronegativity on the Pauling scale?',
+   options:['Oxygen','Fluorine','Chlorine','Neon'],correctIndex:1,
+   explanation:'Electronegativity increases across a period and decreases down a group. Fluorine, at the top of Group 17, has the highest value — about 3.98.'},
+  {id:'bio-cell-03',subject:'Biology',chapter:'Cell Biology',difficulty:'easy',
+   question:'Which organelle is known as the powerhouse of the cell?',
+   options:['Nucleus','Ribosome','Mitochondrion','Golgi apparatus'],correctIndex:2,
+   explanation:'Mitochondria generate most of the cell\u2019s ATP through cellular respiration, which is why they are called the cell\u2019s powerhouses.'}
+];
+var qi=0,answered=false;
+function highlightJson(json){
+  var esc=json.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return esc.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,function(m){
+    var cls='j-num';
+    if(m.charAt(0)==='"'){cls=/\s*:$/.test(m)?'j-key':'j-str';}
+    else if(/^(true|false|null)$/.test(m)){cls='j-bool';}
+    return '<span class="'+cls+'">'+m+'</span>';
+  });
+}
+function renderQuestion(){
+  answered=false;
+  var q=questions[qi];
+  $('#qIndicator').textContent='Question '+(qi+1)+' of '+questions.length;
+  $('#svSubject').textContent=q.subject;
+  $('#svChapter').textContent=q.chapter;
+  var diff=$('#svDiff');
+  diff.textContent=q.difficulty;
+  diff.className='meta-chip diff '+q.difficulty;
+  $('#svText').textContent=q.question;
+  var opts=$('#svOptions');
+  opts.innerHTML='';
+  q.options.forEach(function(o,j){
+    var b=document.createElement('button');
+    b.className='opt';
+    b.type='button';
+    b.innerHTML='<span class="key">'+'ABCD'.charAt(j)+'</span><span>'+o+'</span>';
+    b.addEventListener('click',function(){answer(j,b);});
+    opts.appendChild(b);
+  });
+  var fb=$('#svFeedback');
+  fb.className='feedback';
+  fb.innerHTML='';
+  $('#svNext').style.display='none';
+  $('#jsonCode').innerHTML=highlightJson(JSON.stringify(q,null,2));
+  var body=$('.explorer-body');
+  body.classList.remove('swap');void body.offsetWidth;body.classList.add('swap');
+}
+function answer(j,btn){
+  if(answered)return;
+  answered=true;
+  var q=questions[qi];
+  var btns=$$('#svOptions .opt');
+  btns.forEach(function(b){b.disabled=true;});
+  var correct=q.correctIndex;
+  var fb=$('#svFeedback');
+  if(j===correct){
+    btn.classList.add('correct');
+    fb.classList.add('show','good');
+    fb.innerHTML='<h4><svg class="ic"><use href="#i-check-c"/></svg>Correct! +10 points</h4><p><strong>Explanation:</strong> '+q.explanation+'</p>';
+  }else{
+    btn.classList.add('wrong');
+    btns[correct].classList.add('correct');
+    fb.classList.add('show','bad');
+    fb.innerHTML='<h4><svg class="ic"><use href="#i-x"/></svg>Not quite — the correct answer is highlighted</h4><p><strong>Explanation:</strong> '+q.explanation+'</p>';
+  }
+  $('#svNext').style.display='inline-flex';
+}
+$('#qPrev').addEventListener('click',function(){qi=(qi-1+questions.length)%questions.length;renderQuestion();});
+$('#qNext').addEventListener('click',function(){qi=(qi+1)%questions.length;renderQuestion();});
+$('#svNext').addEventListener('click',function(){qi=(qi+1)%questions.length;renderQuestion();});
+$$('.seg-btn').forEach(function(b){
+  b.addEventListener('click',function(){
+    $$('.seg-btn').forEach(function(x){
+      var on=x===b;
+      x.classList.toggle('active',on);
+      x.setAttribute('aria-selected',on?'true':'false');
+    });
+    var v=b.getAttribute('data-view');
+    $('#studentView').classList.toggle('hidden',v!=='student');
+    $('#dataView').classList.toggle('hidden',v!=='data');
+  });
+});
+$('#copyJson').addEventListener('click',function(){
+  var raw=JSON.stringify(questions[qi],null,2);
+  function done(){toast('Sample question JSON copied to clipboard');}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(raw).then(done,function(){fallback();done();});
+  }else{fallback();done();}
+  function fallback(){
+    var ta=document.createElement('textarea');
+    ta.value=raw;ta.style.position='fixed';ta.style.opacity='0';
+    document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');}catch(e){}
+    ta.remove();
+  }
+});
+renderQuestion();
+
+/* ---------- Data flow visualization ---------- */
+var stages=[
+  {label:'JSON Bank',title:'JSON Question Bank',desc:'The chapter\u2019s questions, bundled inside the app as read-only assets.'},
+  {label:'Data Loading',title:'Data Loading',desc:'AssetManager reads the file and a JSON parser maps it into Kotlin data classes.'},
+  {label:'Quiz Engine',title:'Quiz Engine',desc:'Questions are queued and quiz state — current index, score, answers — is held in memory.'},
+  {label:'UI Rendering',title:'UI Rendering',desc:'XML layouts and Kotlin adapters draw the question and its four options on screen.'},
+  {label:'User Tap',title:'User Interaction',desc:'The learner taps an option; the selection is captured and highlighted instantly.'},
+  {label:'Evaluation',title:'Answer Evaluation',desc:'AnswerValidator compares the selection with correctIndex — a pure, on-device check.'},
+  {label:'Result',title:'Result Display',desc:'Feedback, the explanation, and the running score update on screen immediately.'},
+  {label:'Save History',title:'Local Persistence',desc:'The finished attempt is appended to the on-device history and progress store.'}
+];
+var NS='http://www.w3.org/2000/svg';
+var flowSvg=$('#flowSvg'),flowPath=$('#flowPath'),flowDot=$('#flowDot'),nodesG=$('#flowNodes');
+var positions=[[125,95],[375,95],[625,95],[875,95],[875,255],[625,255],[375,255],[125,255]];
+positions.forEach(function(p,i){
+  var g=document.createElementNS(NS,'g');
+  g.setAttribute('class','fnode');
+  var labelY=p[1]<200?p[1]-40:p[1]+42;
+  g.innerHTML='<circle class="halo" cx="'+p[0]+'" cy="'+p[1]+'" r="33"/>'+
+    '<circle class="nc" cx="'+p[0]+'" cy="'+p[1]+'" r="24"/>'+
+    '<text class="fnum" x="'+p[0]+'" y="'+(p[1]+5.5)+'" text-anchor="middle">'+(i+1)+'</text>'+
+    '<text class="flabel" x="'+p[0]+'" y="'+labelY+'" text-anchor="middle">'+stages[i].label+'</text>';
+  nodesG.appendChild(g);
+});
+var totalLen=flowPath.getTotalLength();
+var marks=[0,250,500,750,910,1160,1410,1660].map(function(m){return m/totalLen;});
+var t=0,playing=false,lastTs=0,curStage=-1;
+function setStage(i){
+  if(i===curStage)return;
+  curStage=i;
+  $$('.fnode',flowSvg).forEach(function(g,j){g.classList.toggle('active',j===i);});
+  var s=stages[i];
+  $('#stageNum').textContent=String(i+1).padStart(2,'0');
+  $('#stageTitle').textContent=s.title;
+  $('#stageDesc').textContent=s.desc;
+}
+function renderFlow(){
+  var pt=flowPath.getPointAtLength(t*totalLen);
+  flowDot.setAttribute('cx',pt.x);
+  flowDot.setAttribute('cy',pt.y);
+  var si=0;
+  for(var k=0;k<marks.length;k++){if(t>=marks[k]-0.0001)si=k;}
+  setStage(si);
+}
+function loop(ts){
+  if(!lastTs)lastTs=ts;
+  var dt=Math.min(ts-lastTs,100);
+  lastTs=ts;
+  if(playing){
+    t+=dt/11000;
+    if(t>=1)t-=1;
+    renderFlow();
+  }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+var playBtn=$('#playPause');
+function setPlaying(p){
+  playing=p;
+  playBtn.querySelector('use').setAttribute('href',p?'#i-pause':'#i-play');
+  playBtn.querySelector('span').textContent=p?'Pause':'Play Data Flow';
+  playBtn.setAttribute('aria-pressed',p?'true':'false');
+}
+playBtn.addEventListener('click',function(){setPlaying(!playing);});
+$('#resetFlow').addEventListener('click',function(){setPlaying(false);t=0;renderFlow();});
+renderFlow();
+if(!reduced){
+  var flowObserver=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){setPlaying(true);flowObserver.disconnect();}
+    });
+  },{threshold:.35});
+  flowObserver.observe(flowSvg);
+}
+})();
+</script>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a47af32d0a673e7d',t:'MTc5MTUyMzM3MQ=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>

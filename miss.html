@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bhoot</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%;
+    background: #000; overflow: hidden;
+  }
+  #video {
+    position: fixed; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: contain;   /* পুরো ভিডিও দেখতে; crop করতে চাইলে cover করো */
+    background: #000;
+  }
+  #hint {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%);
+    color: #fff; font-family: sans-serif; font-size: 14px;
+    background: rgba(0,0,0,.6);
+    padding: 10px 18px; border-radius: 24px;
+    cursor: pointer; user-select: none; z-index: 10;
+    animation: pulse 1.4s infinite;
+  }
+  @keyframes pulse { 50% { opacity: .45; } }
+</style>
+</head>
+<body>
+
+<video id="video" src="bhoot.mp4" autoplay muted loop playsinline preload="auto"></video>
+
+<div id="hint">🔊 সাউন্ডসহ ফুলস্ক্রিন চালাতে স্ক্রিনে ক্লিক করুন</div>
+
+<script>
+const v    = document.getElementById('video');
+const hint = document.getElementById('hint');
+
+// True fullscreen (browser UI hide)
+function goFullscreen() {
+  const el = document.documentElement;
+  if (el.requestFullscreen)            el.requestFullscreen().catch(() => {});
+  else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  else if (el.msRequestFullscreen)     el.msRequestFullscreen();
+}
+
+// প্রথম ক্লিক / ট্যাপ / কী-প্রেসে সাউন্ড + ফুলস্ক্রিন
+function startWithSound() {
+  v.muted = false;
+  v.play().catch(() => {});
+  goFullscreen();
+  hint.style.display = 'none';
+}
+
+document.addEventListener('click',      startWithSound, { once: true });
+document.addEventListener('touchstart', startWithSound, { once: true });
+document.addEventListener('keydown',    startWithSound, { once: true });
+
+// ভিডিও লোড না হলে মেসেজ
+v.addEventListener('error', () => {
+  hint.textContent = '⚠️ bhoot.mp4 পাওয়া যায়নি — ফাইলটা HTML-এর পাশে রাখো';
+});
+</script>
+</body>
+</html>
